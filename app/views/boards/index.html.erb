@@ -1,0 +1,20 @@
+<h1>Your boards</h1>
+
+<% if @boards.empty? %>
+  <p>No boards yet. Create one below.</p>
+<% end %>
+<ul class="boards">
+  <% @boards.each do |board| %>
+    <li><%= link_to board.name, board_path(board) %></li>
+  <% end %>
+</ul>
+
+<%= form_with(url: "/boards") do |f| %>
+  <div class="field">
+    <%= f.label :name, "New board" %>
+    <%= f.text_field :name, maxlength: 100 %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Create board" %>
+  </div>
+<% end %>

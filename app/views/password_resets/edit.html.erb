@@ -1,0 +1,11 @@
+<h1>Choose a new password</h1>
+<%= form_with(url: "/password/reset") do |f| %>
+  <%= f.hidden_field :token, value: @token %>
+  <div class="field">
+    <%= f.label :password, "New password" %>
+    <%= f.password_field :password, autocomplete: "new-password" %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Change password" %>
+  </div>
+<% end %>

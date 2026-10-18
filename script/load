@@ -1,0 +1,41 @@
+#!/bin/bash
+# Load and concurrency checks against a running kanban server.
+#   script/load http://127.0.0.1:3991 SERVER_PID DATABASE_FILE
+# Needs: ab (ApacheBench), curl, sqlite3. Creates its own account.
+B=${1:-http://127.0.0.1:3991}; PID=${2:-}; DB=${3:-}
+RUN=$(date +%s); MAIL="load$RUN@example.com"; PW="correct horse battery"; J=$(mktemp)
+tok() { curl -s -c $J -b $J "$B$1" | grep -o 'name="authenticity_token" value="[^"]*"' | head -1 | sed 's/.*value="//; s/"$//'; }
+form() { T=$(tok "$1"); shift; P=$1; shift; a=(); for kv in "$@"; do a+=(--data-urlencode "$kv"); done; curl -s -o /dev/null -w "%{http_code}" -c $J -b $J --data-urlencode "authenticity_token=$T" "${a[@]}" "$B$P"; }
+rss() { [ -n "$PID" ] && ps -o rss= -p $PID | awk '{printf "%.1f MB", $1/1024}' || echo "n/a"; }
+pct() { grep -E "^ +(50|95|99|100)%" | awk '{printf "%s=%sms ", $1, $2}'; }
+
+form /signup /signup email=$MAIL password="$PW" >/dev/null; form /login /login email=$MAIL password="$PW" >/dev/null
+form / /boards name=Load >/dev/null
+BOARD=$(curl -s -b $J $B/ | grep -o '/boards/[0-9]*' | head -1 | sed 's#/boards/##')
+COOKIE=$(grep _cybertrain_session $J | awk '{print $6"="$7}')
+
+echo "== 1. race: 40 card additions, 20 at a time, on one board"
+T=$(tok /boards/$BOARD)
+seq 1 40 | xargs -P 20 -I{} curl -s -o /dev/null -b $J --data-urlencode "authenticity_token=$T" --data-urlencode "title=card {}" "$B/boards/$BOARD/cards"
+SHOWN=$(curl -s -b $J $B/boards/$BOARD | grep -o 'To do ([0-9]*)')
+echo "   page shows: $SHOWN"
+[ -n "$DB" ] && sqlite3 "$DB" "select 'rows='||count(*)||' distinct positions='||count(distinct position) from cards where board_id=$BOARD"
+
+echo "== 2. throughput (keep-alive, 20 connections, 3000 requests)"
+echo "   server memory before: $(rss)"
+ab -k -q -n 3000 -c 20 $B/login 2>/dev/null | grep -E "Requests per second|Failed requests|Non-2xx" | sed 's/^/   GET \/login:        /'
+ab -k -q -n 3000 -c 20 -C "$COOKIE" $B/boards/$BOARD 2>/dev/null | grep -E "Requests per second|Failed requests|Non-2xx" | sed 's/^/   GET board (signed in): /'
+echo "   server memory after:  $(rss)"
+ab -k -q -n 20000 -c 20 -C "$COOKIE" $B/boards/$BOARD 2>/dev/null | grep -E "Failed requests|Non-2xx" | sed 's/^/   20000 more: /'
+echo "   server memory after 23000 requests: $(rss)"
+
+echo "== 3. a cheap request while passwords are being checked (4 sign-ins at a time)"
+T=$(tok /login)
+printf 'authenticity_token=%s&email=%s&password=%s' "$T" "$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" $MAIL)" "correct%20horse%20battery" > /tmp/kanban-login.body
+COOKIE2=$(grep _cybertrain_session $J | awk '{print $6"="$7}')
+( ab -q -n 16 -c 4 -p /tmp/kanban-login.body -T application/x-www-form-urlencoded -C "$COOKIE2" $B/login > /tmp/kanban-ab-login.txt 2>&1 ) &
+sleep 0.3
+ab -q -n 60 -c 1 $B/login 2>/dev/null | pct | sed 's/^/   GET \/login while signing in: /'; echo
+wait
+grep -E "Complete requests|Time taken" /tmp/kanban-ab-login.txt | sed 's/^/   sign-ins: /'
+rm -f /tmp/kanban-login.body /tmp/kanban-ab-login.txt $J

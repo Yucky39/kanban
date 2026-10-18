@@ -1,0 +1,12 @@
+<h1>Confirm your email address</h1>
+<p>Enter your email address and we will send a new link, if it needs confirming.</p>
+<%= form_with(url: "/email/resend") do |f| %>
+  <div class="field">
+    <%= f.label :email %>
+    <%= f.email_field :email, autocomplete: "username" %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Send the link" %>
+  </div>
+<% end %>
+<p><a href="/login">Back to sign in</a></p>

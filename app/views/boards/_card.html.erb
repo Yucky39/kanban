@@ -1,0 +1,16 @@
+<%# locals: (card:, can_left:, can_right:) %>
+<article class="card">
+  <strong><%= card.title %></strong>
+  <% if card.description %>
+    <p><%= card.description %></p>
+  <% end %>
+  <div class="moves">
+    <% if can_left %>
+      <%= button_to "←", move_card_left_path(card), method: :patch %>
+    <% end %>
+    <% if can_right %>
+      <%= button_to "→", move_card_right_path(card), method: :patch %>
+    <% end %>
+    <%= button_to "Delete", card_path(card), method: :delete %>
+  </div>
+</article>

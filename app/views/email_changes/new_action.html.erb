@@ -1,0 +1,16 @@
+<h1>Change your email address</h1>
+<p>We will send a link to the new address. The change takes effect when you confirm it there.</p>
+<%= form_with(url: "/account/email") do |f| %>
+  <div class="field">
+    <%= f.label :email, "New email address" %>
+    <%= f.email_field :email, autocomplete: "email" %>
+  </div>
+  <div class="field">
+    <%= f.label :password, "Your current password" %>
+    <%= f.password_field :password, autocomplete: "current-password" %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Send the link" %>
+  </div>
+<% end %>
+<p><a href="/">Back</a></p>

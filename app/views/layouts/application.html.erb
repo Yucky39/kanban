@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kanban</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <% if @signed_in %>
+      <nav>
+        <a href="/">Boards</a>
+        <a href="/account/email">Change email</a>
+        <%= button_to "Sign out", "/logout", method: :delete %>
+      </nav>
+    <% end %>
+    <main>
+      <% if flash[:notice] %>
+        <p class="notice"><%= flash[:notice] %></p>
+      <% end %>
+      <% if flash[:alert] %>
+        <p class="alert"><%= flash[:alert] %></p>
+      <% end %>
+      <%= yield %>
+    </main>
+  </body>
+</html>

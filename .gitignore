@@ -1,0 +1,7 @@
+/build/
+/dist/
+/storage/*.sqlite3*
+/tmp/*
+!/tmp/.keep
+/log/
+/storage/mail_spool/

@@ -1,0 +1,12 @@
+<h1>Reset your password</h1>
+<p>Enter your email address. If it has an account, we will send a link.</p>
+<%= form_with(url: "/password/forgot") do |f| %>
+  <div class="field">
+    <%= f.label :email %>
+    <%= f.email_field :email, autocomplete: "username" %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Send the link" %>
+  </div>
+<% end %>
+<p><a href="/login">Back to sign in</a></p>

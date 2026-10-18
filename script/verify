@@ -1,0 +1,103 @@
+#!/bin/bash
+# Drives the running kanban application with curl and checks what it does.
+#   script/verify http://127.0.0.1:3990
+# Needs: curl, python3. Creates two fresh accounts (the addresses carry a timestamp).
+# It exercises sign-up, sign-in, the board / card flow, ownership (one user must never
+# reach another's data), CSRF, validation, HTML escaping and session handling.
+B=${1:-http://127.0.0.1:3990}
+RUN=$(date +%s)
+A_MAIL="alice$RUN@example.com"; B_MAIL="bob$RUN@example.com"; PW="correct horse battery"
+JA=$(mktemp); JB=$(mktemp); JN=$(mktemp)
+PASS=0; FAILS=0
+ok()   { PASS=$((PASS+1)); echo "ok   $1"; }
+fail() { FAILS=$((FAILS+1)); echo "FAIL $1 ($2)"; }
+check() { if [ "$2" = "$3" ]; then ok "$1"; else fail "$1" "expected $2, got $3"; fi; }
+
+token() { curl -s -c "$1" -b "$1" "$B$2" | grep -o 'name="authenticity_token" value="[^"]*"' | head -1 | sed 's/.*value="//; s/"$//'; }
+# status JAR PATH_FOR_TOKEN METHOD PATH [key=value ...]  -> HTTP status of a form post
+send() {
+  local jar=$1 tokpath=$2 method=$3 path=$4; shift 4
+  local t; t=$(token "$jar" "$tokpath")
+  local args=(); for kv in "$@"; do args+=(--data-urlencode "$kv"); done
+  [ "$method" != POST ] && args+=(--data-urlencode "_method=$(echo $method | tr 'A-Z' 'a-z')")
+  curl -s -o /dev/null -w "%{http_code}" -c "$jar" -b "$jar" --data-urlencode "authenticity_token=$t" "${args[@]}" "$B$path"
+}
+get() { curl -s -o /dev/null -w "%{http_code}" -c "$1" -b "$1" "$B$2"; }
+body() { curl -s -c "$1" -b "$1" "$B$2"; }
+signup_and_login() { # jar mail
+  send "$1" /signup POST /signup email="$2" password="$PW" >/dev/null
+  send "$1" /login POST /login email="$2" password="$PW"
+}
+
+echo "== anonymous visitor"
+for p in / /boards/1; do
+  code=$(curl -s -o /dev/null -w "%{http_code} %{redirect_url}" "$B$p"); check "GET $p redirects to /login" "303 $B/login" "$code"
+done
+code=$(curl -s -o /dev/null -w "%{http_code}" -X POST -d "name=x" "$B/boards"); check "POST /boards without a CSRF token is refused" 403 "$code"
+
+echo "== alice signs up and signs in"
+check "sign-up redirects"     303 "$(send $JA /signup POST /signup email=$A_MAIL password="$PW")"
+check "sign-in redirects"     303 "$(send $JA /login POST /login email=$A_MAIL password="$PW")"
+check "boards page opens"     200 "$(get $JA /)"
+check "wrong password refused" 422 "$(send $JN /login POST /login email=$A_MAIL password='wrong wrong wrong')"
+
+echo "== alice's board and cards"
+check "empty board name refused (redirect with alert)" 303 "$(send $JA / POST /boards name='')"
+check "no board was created by that" 0 "$(body $JA / | grep -c '/boards/[0-9]')"
+check "create a board" 303 "$(send $JA / POST /boards name='Sprint 1')"
+BOARD=$(body $JA / | grep -o '/boards/[0-9]*' | head -1 | sed 's#/boards/##')
+[ -n "$BOARD" ] && ok "board id found ($BOARD)" || fail "board id found" "none"
+check "board page opens" 200 "$(get $JA /boards/$BOARD)"
+check "add a card" 303 "$(send $JA /boards/$BOARD POST /boards/$BOARD/cards title='Write tests' description='first line
+second line')"
+check "add a second card" 303 "$(send $JA /boards/$BOARD POST /boards/$BOARD/cards title='Ship it')"
+PAGE=$(body $JA /boards/$BOARD)
+check "both cards are in To do" "To do (2)" "$(echo "$PAGE" | grep -o 'To do ([0-9]*)')"
+CARD=$(echo "$PAGE" | grep -o '/cards/[0-9]*/right' | head -1 | sed 's#/cards/##; s#/right##')
+check "move a card right"  303 "$(send $JA /boards/$BOARD PATCH /cards/$CARD/right)"
+check "now Doing has one" "Doing (1)" "$(body $JA /boards/$BOARD | grep -o 'Doing ([0-9]*)')"
+check "move it right again" 303 "$(send $JA /boards/$BOARD PATCH /cards/$CARD/right)"
+check "now Done has one"  "Done (1)" "$(body $JA /boards/$BOARD | grep -o 'Done ([0-9]*)')"
+send $JA /boards/$BOARD PATCH /cards/$CARD/right >/dev/null
+check "moving past the last column changes nothing" "Done (1)" "$(body $JA /boards/$BOARD | grep -o 'Done ([0-9]*)')"
+check "move it back left" 303 "$(send $JA /boards/$BOARD PATCH /cards/$CARD/left)"
+check "Doing has it again" "Doing (1)" "$(body $JA /boards/$BOARD | grep -o 'Doing ([0-9]*)')"
+
+echo "== validation and escaping"
+send $JA /boards/$BOARD POST /boards/$BOARD/cards title="$(python3 -c 'print("x"*201)')" >/dev/null
+check "a 201-character title is refused" "To do (1)" "$(body $JA /boards/$BOARD | grep -o 'To do ([0-9]*)')"
+send $JA /boards/$BOARD POST /boards/$BOARD/cards title='<script>alert(1)</script>' >/dev/null
+HTML=$(body $JA /boards/$BOARD)
+check "a script in a title is escaped" 0 "$(echo "$HTML" | grep -c '<script>alert')"
+check "...and shown as text" 1 "$(echo "$HTML" | grep -c '&lt;script&gt;alert(1)&lt;/script&gt;')"
+send $JA / POST /boards name='<b>bold</b>' >/dev/null
+check "a tag in a board name is escaped" 0 "$(body $JA / | grep -c '<b>bold</b>')"
+
+echo "== bob must not reach alice's data"
+check "bob signs up and in" 303 "$(signup_and_login $JB $B_MAIL)"
+check "bob sees none of alice's boards" 0 "$(body $JB / | grep -c "/boards/$BOARD\"")"
+CARDS_BEFORE=$(body $JA /boards/$BOARD | grep -c 'class="card"')
+check "GET alice's board -> 404"            404 "$(get $JB /boards/$BOARD)"
+check "add a card to alice's board -> 404"  404 "$(send $JB / POST /boards/$BOARD/cards title='intruder')"
+check "move alice's card -> 404"            404 "$(send $JB / PATCH /cards/$CARD/right)"
+check "delete alice's card -> 404"          404 "$(send $JB / DELETE /cards/$CARD)"
+check "delete alice's board -> 404"         404 "$(send $JB / DELETE /boards/$BOARD)"
+check "alice's data is unchanged" "$CARDS_BEFORE" "$(body $JA /boards/$BOARD | grep -c 'class="card"')"
+check "a card id that does not exist -> 404" 404 "$(send $JB / DELETE /cards/99999999)"
+
+echo "== sessions"
+OLD=$(mktemp); cp $JA $OLD
+check "alice signs out" 303 "$(send $JA / DELETE /logout)"
+check "her board is closed to her now" 303 "$(get $JA /boards/$BOARD)"
+check "replaying the old cookie is refused" 303 "$(get $OLD /boards/$BOARD)"
+check "bob is still signed in" 200 "$(get $JB /)"
+
+echo "== cleanup by the owner"
+send $JA /login POST /login email=$A_MAIL password="$PW" >/dev/null
+check "owner adds a card after signing in again" 303 "$(send $JA /boards/$BOARD POST /boards/$BOARD/cards title=tmp)"
+check "owner deletes the board" 303 "$(send $JA /boards/$BOARD DELETE /boards/$BOARD)"
+check "the board is gone"  404 "$(get $JA /boards/$BOARD)"
+
+rm -f $JA $JB $JN $OLD
+echo; echo "$PASS passed, $FAILS failed"
+[ $FAILS -eq 0 ]

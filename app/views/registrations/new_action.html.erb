@@ -1,0 +1,15 @@
+<h1>Create an account</h1>
+<%= form_with(url: "/signup") do |f| %>
+  <div class="field">
+    <%= f.label :email %>
+    <%= f.email_field :email, autocomplete: "username" %>
+  </div>
+  <div class="field">
+    <%= f.label :password %>
+    <%= f.password_field :password, autocomplete: "new-password" %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Create account" %>
+  </div>
+<% end %>
+<p><a href="/login">Sign in</a></p>

@@ -1,0 +1,40 @@
+<h1><%= @board.name %></h1>
+<p><%= link_to "All boards", "/" %></p>
+
+<div class="columns">
+  <section class="column">
+    <h2>To do (<%= @todo.size %>)</h2>
+    <% @todo.each do |card| %>
+      <%= render "boards/card", card: card, can_left: false, can_right: true %>
+    <% end %>
+  </section>
+  <section class="column">
+    <h2>Doing (<%= @doing.size %>)</h2>
+    <% @doing.each do |card| %>
+      <%= render "boards/card", card: card, can_left: true, can_right: true %>
+    <% end %>
+  </section>
+  <section class="column">
+    <h2>Done (<%= @done.size %>)</h2>
+    <% @done.each do |card| %>
+      <%= render "boards/card", card: card, can_left: true, can_right: false %>
+    <% end %>
+  </section>
+</div>
+
+<h2>Add a card</h2>
+<%= form_with(url: board_cards_path(@board)) do |f| %>
+  <div class="field">
+    <%= f.label :title %>
+    <%= f.text_field :title, maxlength: 200 %>
+  </div>
+  <div class="field">
+    <%= f.label :description %>
+    <%= f.text_area :description, maxlength: 2000 %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Add card" %>
+  </div>
+<% end %>
+
+<%= button_to "Delete this board", board_path(@board), method: :delete, data: { confirm: "Delete this board and its cards?" } %>

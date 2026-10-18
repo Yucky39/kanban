@@ -1,0 +1,8 @@
+<h1>Confirm your new email address</h1>
+<p>Press the button to use this address to sign in. Every signed-in session will end.</p>
+<%= form_with(url: "/email/change") do |f| %>
+  <%= f.hidden_field :token, value: @token %>
+  <div class="actions">
+    <%= f.submit "Confirm" %>
+  </div>
+<% end %>

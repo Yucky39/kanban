@@ -1,0 +1,8 @@
+<h1>Confirm your email address</h1>
+<p>Press the button to confirm that this is your email address.</p>
+<%= form_with(url: "/email/verify") do |f| %>
+  <%= f.hidden_field :token, value: @token %>
+  <div class="actions">
+    <%= f.submit "Confirm" %>
+  </div>
+<% end %>
