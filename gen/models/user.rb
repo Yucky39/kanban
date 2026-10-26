@@ -2,6 +2,7 @@
 class UserRelation < Cybertrain::Relation
   def where(h) = (add_where(h); self)
   def where_sql(s, b = []) = (add_where_sql(s, b); self)
+  def where_like(c, t) = (add_where_like(c, t); self)
   def order(o) = (set_order(o); self)
   def order_sql(s) = (add_order_sql(s); self)
   def limit(n) = (set_limit(n); self)
@@ -9,7 +10,12 @@ class UserRelation < Cybertrain::Relation
 
   def to_a
     out = Array.new(0) { User.new }
-    rows.each { |r| out << User.from_row(r) }
+    found = rows
+    i = 0
+    while i < found.size
+      out << User.from_row(found[i])
+      i += 1
+    end
     out
   end
 
@@ -53,11 +59,11 @@ class User < Cybertrain::Model
     @updated_at = nil
     @email_verified_at = nil
     @pending_email = nil
-    assign_attributes(attrs)
+    assign_attributes(attrs) unless attrs.empty?
   end
 
   def self.from_row(row)
-    rec = User.new
+    rec = User.new(Cybertrain::Model::NO_ATTRIBUTES)
     rec.load_row(row)
     rec
   end
@@ -117,6 +123,7 @@ class User < Cybertrain::Model
 
   def self.all = UserRelation.new("users")
   def self.where(h) = all.where(h)
+  def self.where_like(c, t) = all.where_like(c, t)
   def self.order(o) = all.order(o)
   def self.order_sql(s) = all.order_sql(s)
   def self.limit(n) = all.limit(n)

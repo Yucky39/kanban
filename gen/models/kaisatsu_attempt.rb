@@ -2,6 +2,7 @@
 class KaisatsuAttemptRelation < Cybertrain::Relation
   def where(h) = (add_where(h); self)
   def where_sql(s, b = []) = (add_where_sql(s, b); self)
+  def where_like(c, t) = (add_where_like(c, t); self)
   def order(o) = (set_order(o); self)
   def order_sql(s) = (add_order_sql(s); self)
   def limit(n) = (set_limit(n); self)
@@ -9,7 +10,12 @@ class KaisatsuAttemptRelation < Cybertrain::Relation
 
   def to_a
     out = Array.new(0) { KaisatsuAttempt.new }
-    rows.each { |r| out << KaisatsuAttempt.from_row(r) }
+    found = rows
+    i = 0
+    while i < found.size
+      out << KaisatsuAttempt.from_row(found[i])
+      i += 1
+    end
     out
   end
 
@@ -50,11 +56,11 @@ class KaisatsuAttempt < Cybertrain::Model
     @bucket = ""
     @window_start = 0
     @failures = 0
-    assign_attributes(attrs)
+    assign_attributes(attrs) unless attrs.empty?
   end
 
   def self.from_row(row)
-    rec = KaisatsuAttempt.new
+    rec = KaisatsuAttempt.new(Cybertrain::Model::NO_ATTRIBUTES)
     rec.load_row(row)
     rec
   end
@@ -102,6 +108,7 @@ class KaisatsuAttempt < Cybertrain::Model
 
   def self.all = KaisatsuAttemptRelation.new("kaisatsu_attempts")
   def self.where(h) = all.where(h)
+  def self.where_like(c, t) = all.where_like(c, t)
   def self.order(o) = all.order(o)
   def self.order_sql(s) = all.order_sql(s)
   def self.limit(n) = all.limit(n)

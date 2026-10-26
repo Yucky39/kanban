@@ -28,7 +28,7 @@ Mail (confirmation and reset links) is queued in `storage/mail_spool/` and sent 
 
 ## What was checked
 
-`script/verify` drives a running server with `curl` (42 checks) and `script/load` measures it with ApacheBench. Both were run against the development server and against the production binary (`cybertrain build`), on macOS arm64, Spinel 2026.09.12, CyberTrain v0.2.1.
+`script/verify` drives a running server with `curl` (42 checks) and `script/load` measures it with ApacheBench. Both were run against the development server and against the production binary (`cybertrain build`), on macOS arm64, Spinel 2026.09.12, CyberTrain v0.2.1. After that the repository moved to CyberTrain `main` (`cb83688`); `script/verify` was run again on the production build there: 42 of 42. The load numbers below are from v0.2.1 and were not repeated.
 
 **Behaviour: 42 of 42 checks pass, in development and in the production build.**
 
@@ -56,7 +56,7 @@ Mail (confirmation and reset links) is queued in `storage/mail_spool/` and sent 
 ## What it showed about the stack
 
 - **Template and controller code must avoid a few things.** `Array#index` with a column value did not compile (a loop over string comparisons does); inside a `DB.with` block `self` is not the controller, so `request`, `ctx` and `params` must be read into locals first.
-- **OpenSSL cannot live in the web binary** ([CyberTrain#27](https://github.com/saeki-mototsune/CyberTrain/issues/27)): the mail worker is a separate program for that reason.
+- **OpenSSL could not live in the web binary at CyberTrain v0.2.1** ([CyberTrain#27](https://github.com/saeki-mototsune/CyberTrain/issues/27)), which is why the mail worker is a separate program. It is fixed in CyberTrain `main`, which this repository now follows (`spin.toml`). Checked on `main`: with SMTP code linked into the web binary and mail sent from a thread to Mailpit, `script/verify` passes 42 of 42 in development and in the production build, the two confirmation mails arrive, and `GET /login` ran at about 20,000 requests per second with no failures at about 14 MB. One catch: `require "openssl"` has to come first in `config/app.rb`; after `cybertrain/kaisatsu/full` the build stopped at `openssl/digest.rb:40: unsupported call ... sha256_bin`. This repository still uses the separate worker; the in-process variant was tried in a scratch copy only.
 - **Test-harness class variables** can share an array with the router after a garbage collection ([CyberTrain#26](https://github.com/saeki-mototsune/CyberTrain/issues/26)); not relevant to the running application.
 - The scaffold's generated controllers have no ownership checks; the ones here are hand-written with `Board.where(user_id: ...)`. Nothing in the framework enforces it, so every query has to remember it.
 

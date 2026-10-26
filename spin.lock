@@ -3,4 +3,14 @@
 [lock.cybertrain]
 version = "0.2.1"
 git = "https://github.com/saeki-mototsune/cybertrain"
-ref = "ae6b95770d605db585217dd1f02ababf11f66f7b"
+ref = "cb8368885715732fb285a652a28a0583d98c6bfc"
+
+[lock.cybertrain-kaisatsu]
+version = "0.0.1"
+git = "https://github.com/Yucky39/cybertrain-kaisatsu"
+ref = "6b010a165471733911423cb60853f7fe33135422"
+
+[lock.cybertrain-postal]
+version = "0.0.1"
+git = "https://github.com/Yucky39/cybertrain-postal"
+ref = "f8fbb9e0ad6dd0ab155a5806a769bf15c4d3d638"
