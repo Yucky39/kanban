@@ -21,11 +21,11 @@ class RegistrationsController < ApplicationController
 
   private
 
-  # A DB.with block cannot see the controller's request: bind first.
+  # A Cybertrain::DB.with block cannot see the controller's request: bind first.
   def send_confirmation(email)
     ip = request.remote_addr
     now = Time.now.to_i
-    DB.with do |conn|
+    Cybertrain::DB.with do |conn|
       Accounts.email_verification.request_verification(conn, email, ip, now)
     end
     nil

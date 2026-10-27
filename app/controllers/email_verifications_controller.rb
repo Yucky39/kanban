@@ -36,12 +36,12 @@ class EmailVerificationsController < ApplicationController
 
   private
 
-  # Everything a DB.with block needs is a local first: inside the block `self`
+  # Everything a Cybertrain::DB.with block needs is a local first: inside the block `self`
   # is not the controller under Spinel.
   def send_link(email)
     ip = request.remote_addr
     now = Time.now.to_i
-    DB.with do |conn|
+    Cybertrain::DB.with do |conn|
       Accounts.email_verification.request_verification(conn, email, ip, now)
     end
     nil
@@ -49,15 +49,25 @@ class EmailVerificationsController < ApplicationController
 
   def token_still_valid?(token)
     now = Time.now.to_i
-    DB.with do |conn|
-      Accounts.email_verification.token_valid?(conn, token, now)
+    # Declared first, then assigned inside the block: the value of a
+    # Cybertrain::DB.with block is untyped, and a method call on it fails
+    # at run time on Spinel 2026.10.26.7019.
+    outcome = false
+    Cybertrain::DB.with do |conn|
+      outcome = Accounts.email_verification.token_valid?(conn, token, now)
     end
+    outcome
   end
 
   def confirm(token)
     now = Time.now.to_i
-    DB.with do |conn|
-      Accounts.email_verification.complete_verification(conn, token, now)
+    # Declared first, then assigned inside the block: the value of a
+    # Cybertrain::DB.with block is untyped, and a method call on it fails
+    # at run time on Spinel 2026.10.26.7019.
+    outcome = Cybertrain::Kaisatsu::VerifyOutcome.new("none")
+    Cybertrain::DB.with do |conn|
+      outcome = Accounts.email_verification.complete_verification(conn, token, now)
     end
+    outcome
   end
 end
