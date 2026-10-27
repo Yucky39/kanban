@@ -8,7 +8,7 @@ ref = "6f3104d502651158550d89ae9c3ed4bc06181ddd"
 [lock.cybertrain-kaisatsu]
 version = "0.0.1"
 git = "https://github.com/Yucky39/cybertrain-kaisatsu"
-ref = "bdd8b1015e663b647bec9475ca6cf34dd3ca7d93"
+ref = "e0f1c15bdb0ede2329a5941ff9534906dd81451f"
 
 [lock.cybertrain-postal]
 version = "0.0.1"
