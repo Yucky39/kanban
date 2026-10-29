@@ -9,5 +9,5 @@ version = "0.1.0"
 
 [dependencies]
 cybertrain = { git = "https://github.com/saeki-mototsune/cybertrain", ref = "v0.3.1" }
-cybertrain-kaisatsu = { git = "https://github.com/Yucky39/cybertrain-kaisatsu", ref = "v0.0.1" }
-cybertrain-postal = { git = "https://github.com/Yucky39/cybertrain-postal", ref = "v0.0.1" }
+cybertrain-kaisatsu = { git = "https://github.com/Yucky39/cybertrain-kaisatsu", ref = "v0.0.2" }
+cybertrain-postal = { git = "https://github.com/Yucky39/cybertrain-postal", ref = "v0.0.2" }

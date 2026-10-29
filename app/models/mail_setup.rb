@@ -91,7 +91,14 @@ end
 module MailSetup
   def self.notifier
     from = ENV["KAISATSU_MAIL_FROM"]
-    return Cybertrain::Kaisatsu::ConsoleNotifier.new if from.nil? || from.empty?
+    if from.nil? || from.empty?
+      # The console notifier prints every link to the log: fine while developing,
+      # a leak in production.
+      if ENV["CYBERTRAIN_ENV"] == "production"
+        raise "KAISATSU_MAIL_FROM is not set: refusing to print sign-in links to the log in production"
+      end
+      return Cybertrain::Kaisatsu::ConsoleNotifier.new
+    end
 
     name = ENV["KAISATSU_MAIL_FROM_NAME"]
     dir = ENV["KAISATSU_MAIL_SPOOL"]
