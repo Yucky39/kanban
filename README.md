@@ -6,7 +6,7 @@ Each person has their own boards. A board has three columns (To do, Doing, Done)
 
 ## Run it
 
-Needs Spinel 2026.09.12 (`cybertrain setup`), and on macOS with Homebrew:
+Needs Spinel 2026.10.27.7020 (`cybertrain setup`), and on macOS with Homebrew:
 
 ```sh
 export LIBRARY_PATH=$(brew --prefix openssl@3)/lib CPATH=$(brew --prefix openssl@3)/include   # for the mail worker only
@@ -55,7 +55,7 @@ Mail (confirmation and reset links) is queued in `storage/mail_spool/` and sent 
 
 ## What it showed about the stack
 
-- **On Spinel 2026.10.26.7019 (CyberTrain v0.3.0) two things in the generated controllers broke and were fixed here.** The value of a `Cybertrain::DB.with` block must not be used straight away: a method call on it was `NoMethodError` (`undefined method 'ok?' for an instance of LoginResult`) and `if token_still_valid?(...)` was refused by the compiler (`unsupported condition (non-bool)`); declaring a typed local before the block and assigning inside it works. A bare `DB.with` in a top-level controller class became `NameError: uninitialized constant SessionsController::DB`; it is `Cybertrain::DB.with` now. Neither happens on Spinel 2026.09.12 or the official 2026.10.25.
+- **On Spinel 2026.10.27.7020 (CyberTrain v0.3.1) the value of a `Cybertrain::DB.with` block can be used directly again.** On 2026.10.26.7019 it was untyped (a method call on it was `NoMethodError`, `if` on it was refused as `non-bool`) and the controllers declared a typed local before the block; that workaround is gone. A bare `DB.with` in a top-level controller class is still `NameError: uninitialized constant SessionsController::DB` (it is `Cybertrain::DB.with`).
 
 - **Template and controller code must avoid a few things.** `Array#index` with a column value did not compile (a loop over string comparisons does); inside a `DB.with` block `self` is not the controller, so `request`, `ctx` and `params` must be read into locals first.
 - **OpenSSL could not live in the web binary at CyberTrain v0.2.1** ([CyberTrain#27](https://github.com/saeki-mototsune/CyberTrain/issues/27)), which is why the mail worker is a separate program. It is fixed in CyberTrain v0.3.0, which this repository now follows (`spin.toml`). Checked on `main`: with SMTP code linked into the web binary and mail sent from a thread to Mailpit, `script/verify` passes 42 of 42 in development and in the production build, the two confirmation mails arrive, and `GET /login` ran at about 20,000 requests per second with no failures at about 14 MB. One catch: `require "openssl"` has to come first in `config/app.rb`; after `cybertrain/kaisatsu/full` the build stopped at `openssl/digest.rb:40: unsupported call ... sha256_bin`. This repository still uses the separate worker; the in-process variant was tried in a scratch copy only.

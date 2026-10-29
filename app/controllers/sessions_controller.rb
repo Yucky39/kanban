@@ -35,14 +35,9 @@ class SessionsController < ApplicationController
     now = Time.now.to_i
     # Everything the block needs is a local first: inside a Cybertrain::DB.with block
     # `self` is not the controller under Spinel, so request/ctx/params would not resolve.
-    # Declared first, then assigned inside the block: the value of a
-    # Cybertrain::DB.with block is untyped, and a method call on it fails
-    # at run time on Spinel 2026.10.26.7019.
-    outcome = Cybertrain::Kaisatsu::LoginResult.new("none", "", "")
     Cybertrain::DB.with do |conn|
-      outcome = Accounts.authenticator.login(conn, email, password, ip, now)
+      Accounts.authenticator.login(conn, email, password, ip, now)
     end
-    outcome
   end
 
   def sign_out_now
