@@ -23,7 +23,7 @@ class RegistrationsController < ApplicationController
 
   # A Cybertrain::DB.with block cannot see the controller's request: bind first.
   def send_confirmation(email)
-    ip = request.remote_addr
+    ip = request.client_ip
     now = Time.now.to_i
     Cybertrain::DB.with do |conn|
       Accounts.email_verification.request_verification(conn, email, ip, now)

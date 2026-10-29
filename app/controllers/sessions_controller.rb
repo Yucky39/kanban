@@ -31,7 +31,7 @@ class SessionsController < ApplicationController
   def login_result
     email = params[:email].to_s
     password = params[:password].to_s
-    ip = request.remote_addr
+    ip = request.client_ip
     now = Time.now.to_i
     # Everything the block needs is a local first: inside a Cybertrain::DB.with block
     # `self` is not the controller under Spinel, so request/ctx/params would not resolve.

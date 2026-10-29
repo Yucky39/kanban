@@ -39,7 +39,7 @@ class EmailVerificationsController < ApplicationController
   # Everything a Cybertrain::DB.with block needs is a local first: inside the block `self`
   # is not the controller under Spinel.
   def send_link(email)
-    ip = request.remote_addr
+    ip = request.client_ip
     now = Time.now.to_i
     Cybertrain::DB.with do |conn|
       Accounts.email_verification.request_verification(conn, email, ip, now)
