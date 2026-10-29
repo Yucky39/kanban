@@ -1,0 +1,8 @@
+<h1>Put your old email address back</h1>
+<p>The sign-in address of your account was changed. Press the button to undo it. Every signed-in session will end, and you will be asked to reset your password.</p>
+<%= form_with(url: "/email/revert") do |f| %>
+  <%= f.hidden_field :token, value: @token %>
+  <div class="actions">
+    <%= f.submit "Undo the change" %>
+  </div>
+<% end %>

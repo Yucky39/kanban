@@ -25,4 +25,6 @@ Cybertrain::Routes.draw do
   post "/account/email", to: "email_changes#create", as: "create_change_email"
   get "/email/change/:token", to: "email_changes#edit", as: "confirm_email_change"
   post "/email/change", to: "email_changes#update", as: "update_email_change"
+  get "/email/revert/:token", to: "email_changes#revert_form", as: "revert_email_change_form"
+  post "/email/revert", to: "email_changes#revert", as: "revert_email_change"
 end

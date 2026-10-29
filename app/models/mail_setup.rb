@@ -63,6 +63,23 @@ class PostalNotifier < Cybertrain::Kaisatsu::Notifier
                  "If it was not you, contact the administrator at once.\n", 86400)
   end
 
+  def send_email_change_undo(old_email, new_email, link)
+    enqueue_text(old_email, "Your sign-in address was changed",
+                 "The sign-in address of this account was changed to another address, " \
+                 "and every signed-in session was ended.\n\n" \
+                 "If it was you, you need do nothing. If it was not, open this link within " \
+                 "a week to put this address back, then reset your password:\n\n" +
+                 link + "\n", 604800)
+  end
+
+  def send_signup_existing(email, link)
+    enqueue_text(email, "Someone tried to sign up with your address",
+                 "Someone tried to create an account with this address, which already has one.\n\n" \
+                 "If it was you, just sign in. If you forgot your password, you can reset it:\n\n" +
+                 link + "\n\n" \
+                 "If it was not you, ignore this mail: nothing changed.\n", 259200)
+  end
+
   def send_password_changed(email)
     enqueue_text(email, "Your password was changed",
                  "The password for this account was just changed, and every signed-in " \

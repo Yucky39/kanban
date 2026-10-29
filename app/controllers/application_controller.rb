@@ -1,6 +1,6 @@
 class ApplicationController < Cybertrain::Controller
   # Kaisatsu: check the session id against the database on every request.
-  before_action { |c| Cybertrain::Kaisatsu::Gate.resolve(c.ctx) }
+  before_action :resolve_kaisatsu_session
 
   rescue_from Cybertrain::RecordNotFound, with: :record_not_found
 
@@ -13,12 +13,20 @@ class ApplicationController < Cybertrain::Controller
     @signed_in = signed_in?
   end
 
+  # Who is signed in is looked up once per request and kept here, not in the
+  # cookie. A controller that does not inherit this one never runs it.
+  def resolve_kaisatsu_session
+    @kaisatsu_user_id = Cybertrain::Kaisatsu::Gate.resolve(ctx)
+    nil
+  end
+
   def signed_in?
-    Cybertrain::Kaisatsu::Gate.signed_in?(ctx)
+    current_user_id.bytesize > 0
   end
 
   def current_user_id
-    Cybertrain::Kaisatsu::Gate.user_id(ctx)
+    uid = @kaisatsu_user_id
+    uid.nil? ? "" : uid
   end
 
   # Use as: before_action :require_login

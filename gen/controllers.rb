@@ -2,11 +2,12 @@
 
 class ApplicationController < Cybertrain::Controller
   def view_assigns
-    { "signed_in" => @signed_in }
+    { "signed_in" => @signed_in, "kaisatsu_user_id" => @kaisatsu_user_id }
   end
 
   def run_callback(name)
     case name
+    when :resolve_kaisatsu_session then resolve_kaisatsu_session
     when :record_not_found then record_not_found
     when :expose_sign_in_state then expose_sign_in_state
     else super
@@ -16,7 +17,7 @@ end
 
 class BoardsController < ApplicationController
   def view_assigns
-    { "signed_in" => @signed_in, "boards" => @boards, "board" => @board, "todo" => @todo, "doing" => @doing, "done" => @done }
+    { "signed_in" => @signed_in, "kaisatsu_user_id" => @kaisatsu_user_id, "boards" => @boards, "board" => @board, "todo" => @todo, "doing" => @doing, "done" => @done }
   end
 
   def run_callback(name)
@@ -29,7 +30,7 @@ end
 
 class CardsController < ApplicationController
   def view_assigns
-    { "signed_in" => @signed_in }
+    { "signed_in" => @signed_in, "kaisatsu_user_id" => @kaisatsu_user_id }
   end
 
   def run_callback(name)
@@ -42,7 +43,7 @@ end
 
 class EmailChangesController < ApplicationController
   def view_assigns
-    { "signed_in" => @signed_in, "token" => @token }
+    { "signed_in" => @signed_in, "kaisatsu_user_id" => @kaisatsu_user_id, "token" => @token }
   end
 
   def run_callback(name)
@@ -55,24 +56,24 @@ end
 
 class EmailVerificationsController < ApplicationController
   def view_assigns
-    { "signed_in" => @signed_in, "token" => @token }
+    { "signed_in" => @signed_in, "kaisatsu_user_id" => @kaisatsu_user_id, "token" => @token }
   end
 end
 
 class PasswordResetsController < ApplicationController
   def view_assigns
-    { "signed_in" => @signed_in, "token" => @token }
+    { "signed_in" => @signed_in, "kaisatsu_user_id" => @kaisatsu_user_id, "token" => @token }
   end
 end
 
 class RegistrationsController < ApplicationController
   def view_assigns
-    { "signed_in" => @signed_in }
+    { "signed_in" => @signed_in, "kaisatsu_user_id" => @kaisatsu_user_id }
   end
 end
 
 class SessionsController < ApplicationController
   def view_assigns
-    { "signed_in" => @signed_in }
+    { "signed_in" => @signed_in, "kaisatsu_user_id" => @kaisatsu_user_id }
   end
 end

@@ -16,12 +16,19 @@ class RegistrationsController < ApplicationController
       flash.now[:alert] = problem
       return render(:new_action, status: :unprocessable_entity)
     end
-    user = User.new(email: email, password_hash: Cybertrain::Kaisatsu::PasswordHash.create(password))
-    unless user.save
-      flash.now[:alert] = "The account could not be created"
-      return render(:new_action, status: :unprocessable_entity)
+    # The hash is made either way, so an address that already has an account
+    # costs the same time; and the answer below is the same either way.
+    hash = Cybertrain::Kaisatsu::PasswordHash.create(password)
+    if User.where(email: email).first.nil?
+      user = User.new(email: email, password_hash: hash)
+      unless user.save
+        flash.now[:alert] = "The account could not be created"
+        return render(:new_action, status: :unprocessable_entity)
+      end
+      send_confirmation(email)
+    else
+      tell_owner(email)
     end
-    send_confirmation(email)
     flash[:notice] = "Account created. We sent a link to confirm your email address. Please sign in."
     redirect_to "/login", status: :see_other
   end
@@ -34,6 +41,17 @@ class RegistrationsController < ApplicationController
     Cybertrain::DB.with do |conn|
       Cybertrain::Kaisatsu::Throttle.hit(conn, "signup:" + ip, now, 10, 900)
     end
+  end
+
+  # The address already has an account: the owner is told by mail, the person
+  # at the form is not.
+  def tell_owner(email)
+    ip = request.client_ip
+    now = Time.now.to_i
+    Cybertrain::DB.with do |conn|
+      Accounts.email_verification.signup_again(conn, email, ip, now)
+    end
+    nil
   end
 
   # A Cybertrain::DB.with block cannot see the controller's request: bind first.
@@ -51,7 +69,6 @@ class RegistrationsController < ApplicationController
     return "Email is not valid" unless email.include?("@") && email.length <= 254
     policy = Cybertrain::Kaisatsu::PasswordHash.policy_error(password)
     return "Password: " + policy unless policy.empty?
-    return "Email is already taken" unless User.where(email: email).first.nil?
     ""
   end
 end

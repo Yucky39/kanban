@@ -49,7 +49,45 @@ class EmailChangesController < ApplicationController
     redirect_to "/login", status: :see_other
   end
 
+  # GET /email/revert/:token
+  # The link in the notice to the OLD address. Opening it only shows a button.
+  def revert_form
+    @token = params[:token].to_s
+    unless revert_still_valid?(@token)
+      flash[:alert] = "That link is invalid or has expired."
+      return redirect_to("/login", status: :see_other)
+    end
+    response.set_header("Referrer-Policy", "no-referrer")
+  end
+
+  # POST /email/revert
+  def revert
+    outcome = undo(params[:token].to_s)
+    if outcome.done?
+      flash[:notice] = "Your old email address is back and every session was ended. " \
+                       "Someone may have had your password: reset it now."
+      redirect_to "/password/forgot", status: :see_other
+    else
+      flash[:alert] = outcome.status == "taken" ? "That address is now used by another account, so nothing was changed." : "That link is invalid or has expired."
+      redirect_to "/login", status: :see_other
+    end
+  end
+
   private
+
+  def revert_still_valid?(token)
+    now = Time.now.to_i
+    Cybertrain::DB.with do |conn|
+      Accounts.email_change.revert_valid?(conn, token, now)
+    end
+  end
+
+  def undo(token)
+    now = Time.now.to_i
+    Cybertrain::DB.with do |conn|
+      Accounts.email_change.revert_change(conn, token, now)
+    end
+  end
 
   # Everything a Cybertrain::DB.with block needs is a local first: inside the block `self`
   # is not the controller under Spinel.

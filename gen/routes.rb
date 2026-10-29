@@ -30,10 +30,12 @@ module Gen
       router.add("POST", "/account/email", "create_change_email") { |ctx| EmailChangesController.new(ctx).process(:create) { |c| c.create } }
       router.add("GET", "/email/change/:token", "confirm_email_change") { |ctx| EmailChangesController.new(ctx).process(:edit) { |c| c.edit } }
       router.add("POST", "/email/change", "update_email_change") { |ctx| EmailChangesController.new(ctx).process(:update) { |c| c.update } }
+      router.add("GET", "/email/revert/:token", "revert_email_change_form") { |ctx| EmailChangesController.new(ctx).process(:revert_form) { |c| c.revert_form } }
+      router.add("POST", "/email/revert", "revert_email_change") { |ctx| EmailChangesController.new(ctx).process(:revert) { |c| c.revert } }
       router
     end
 
-    # The helper named by a String, for templates: path_for("update_email_change_path", []).
+    # The helper named by a String, for templates: path_for("revert_email_change_path", []).
     def self.path_for(name, args)
       case name
       when "root_path" then "/"
@@ -84,6 +86,10 @@ module Gen
       when "confirm_email_change_url" then Cybertrain.url_root + "/email/change/#{Cybertrain::Gen.segment(args[0])}"
       when "update_email_change_path" then "/email/change"
       when "update_email_change_url" then Cybertrain.url_root + "/email/change"
+      when "revert_email_change_form_path" then "/email/revert/#{Cybertrain::Gen.segment(args[0])}"
+      when "revert_email_change_form_url" then Cybertrain.url_root + "/email/revert/#{Cybertrain::Gen.segment(args[0])}"
+      when "revert_email_change_path" then "/email/revert"
+      when "revert_email_change_url" then Cybertrain.url_root + "/email/revert"
       else raise ArgumentError, "unknown route helper '#{name}'"
       end
     end
@@ -285,6 +291,22 @@ module Gen
 
     def update_email_change_url
       Cybertrain.url_root + update_email_change_path
+    end
+
+    def revert_email_change_form_path(token)
+      "/email/revert/#{Cybertrain::Gen.segment(token)}"
+    end
+
+    def revert_email_change_form_url(token)
+      Cybertrain.url_root + revert_email_change_form_path(token)
+    end
+
+    def revert_email_change_path
+      "/email/revert"
+    end
+
+    def revert_email_change_url
+      Cybertrain.url_root + revert_email_change_path
     end
   end
 end

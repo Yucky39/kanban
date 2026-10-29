@@ -94,6 +94,14 @@ class BackgroundNotifier < Cybertrain::Kaisatsu::Notifier
     spawn_changed_notice(@inner, old_email, new_email)
   end
 
+  def send_email_change_undo(old_email, new_email, link)
+    spawn_change_undo(@inner, old_email, new_email, link)
+  end
+
+  def send_signup_existing(email, link)
+    spawn_signup_existing(@inner, email, link)
+  end
+
   def send_password_changed(email)
     spawn_changed(@inner, email)
   end
@@ -107,6 +115,16 @@ class BackgroundNotifier < Cybertrain::Kaisatsu::Notifier
 
   def spawn_change_requested(inner, old_email, new_email)
     Thread.new { inner.send_email_change_requested(old_email, new_email) }
+    nil
+  end
+
+  def spawn_change_undo(inner, old_email, new_email, link)
+    Thread.new { inner.send_email_change_undo(old_email, new_email, link) }
+    nil
+  end
+
+  def spawn_signup_existing(inner, email, link)
+    Thread.new { inner.send_signup_existing(email, link) }
     nil
   end
 
